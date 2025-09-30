@@ -1,0 +1,7 @@
+# Pactus SDK Examples - Python Dependencies
+# Official Pactus Python SDK packages
+pactus-grpc>=1.0.0
+pactus-jsonrpc>=1.0.0
+
+# Additional utilities
+asyncio

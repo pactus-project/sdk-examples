@@ -1,3 +1,10 @@
+// Pactus JSON-RPC Example
+// ===================
+//
+// This example demonstrates how to interact with the Pactus blockchain
+// using the official pactus-jsonrpc JavaScript SDK.
+//
+
 import PactusOpenRPC from "pactus-jsonrpc";
 
 console.log("📡 JSON-RPC Examples");

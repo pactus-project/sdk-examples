@@ -1,3 +1,10 @@
+// Pactus gRPC Example
+// ===================
+//
+// This example demonstrates how to interact with the Pactus blockchain
+// using the official pactus-grpc JavaScript SDK.
+//
+
 import grpc from "@grpc/grpc-js";
 import blockchain_pb from "pactus-grpc/blockchain_pb.js";
 import blockchain_grpc_pb from "pactus-grpc/blockchain_grpc_pb.js";
