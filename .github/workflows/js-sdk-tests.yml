@@ -1,0 +1,49 @@
+name: JavaScript SDK Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run every 24 hours at 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test-jsonrpc:
+    runs-on: ubuntu-latest
+    name: Test JSON-RPC SDK
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - run: |
+        cd js
+        npm install
+        npm run jsonrpc
+
+  test-grpc:
+    runs-on: ubuntu-latest
+    name: Test gRPC SDK
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - run: |
+        cd js
+        npm install
+        npm run grpc
+
