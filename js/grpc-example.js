@@ -5,7 +5,7 @@ import network_pb from "pactus-grpc/network_pb.js";
 import network_grpc_pb from "pactus-grpc/network_grpc_pb.js";
 
 // Configuration
-const GRPC_URL = "testnet1.pactus.org:50051";
+const GRPC_URL = "testnet1.pactus.org:50052";
 
 console.log("🔗 gRPC Examples");
 console.log("================\n");
