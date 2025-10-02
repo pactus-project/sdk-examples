@@ -1,7 +1,7 @@
 {
   "name": "pactus-sdk-example",
   "version": "1.0.0",
-  "description": "Comprehensive example demonstrating both pactus-jsonrpc and pactus-grpc SDKs",
+  "description": "Pactus SDK Examples in JavaScript",
   "license": "MIT",
   "author": "Pactus Development Team",
   "homepage": "https://pactus.org",

@@ -1,0 +1,26 @@
+[package]
+name = "pactus-sdk-example"
+version = "1.0.0"
+edition = "2021"
+description = "Pactus SDK Examples in Rust"
+authors = ["Pactus Development Team <info@pactus.org>"]
+license = "MIT"
+homepage = "https://pactus.org"
+keywords = ["pactus", "blockchain", "json-rpc", "grpc"]
+
+[dependencies]
+pactus-grpc = "1"
+pactus-jsonrpc = "1"
+jsonrpc-client-http = "0.5.0"
+jsonrpsee = "0.26.0"
+tokio = { version = "1", features = ["full"] }
+serde_json = "1.0"
+tonic = "0.12"
+
+[[bin]]
+name = "grpc_example"
+path = "src/grpc_example.rs"
+
+[[bin]]
+name = "jsonrpc_example"
+path = "src/jsonrpc_example.rs"

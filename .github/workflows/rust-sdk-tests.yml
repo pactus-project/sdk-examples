@@ -1,0 +1,47 @@
+name: Rust SDK Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run every 24 hours at 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test-jsonrpc:
+    runs-on: ubuntu-latest
+    name: Test JSON-RPC SDK
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.90
+
+    - name: Run JSON-RPC example
+      run: |
+        cd rust
+        cargo run --bin jsonrpc_example
+
+  test-grpc:
+    runs-on: ubuntu-latest
+    name: Test gRPC SDK
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.90
+
+    - name: Run gRPC example
+      run: |
+        cd rust
+        cargo run --bin grpc_example
+

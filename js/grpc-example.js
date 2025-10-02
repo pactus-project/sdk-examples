@@ -14,7 +14,7 @@ import network_grpc_pb from "pactus-grpc/network_grpc_pb.js";
 // Configuration
 const GRPC_URL = "testnet1.pactus.org:50052";
 
-console.log("🔗 gRPC Examples");
+console.log("gRPC Examples");
 console.log("================\n");
 
 // Initialize gRPC clients
@@ -46,39 +46,39 @@ function grpcToPromise(client, method, request) {
 
 console.log("Getting blockchain info...");
 const blockchainInfoRequest = new blockchain_pb.GetBlockchainInfoRequest();
-const blockchainInfo = await grpcToPromise(
+const blockchainInfoResponse = await grpcToPromise(
   blockchainStub,
   "getBlockchainInfo",
   blockchainInfoRequest
 );
 console.log(
   "✅ Blockchain Info:",
-  JSON.stringify(blockchainInfo.toObject(), null, 2)
+  JSON.stringify(blockchainInfoResponse.toObject(), null, 2)
 );
 console.log("");
 
 console.log("Getting latest block...");
-const getBlockRequest = new blockchain_pb.GetBlockRequest();
-getBlockRequest.setHeight(blockchainInfo.getLastBlockHeight());
-getBlockRequest.setVerbosity(1);
+const blockRequest = new blockchain_pb.GetBlockRequest();
+blockRequest.setHeight(blockchainInfoResponse.getLastBlockHeight());
+blockRequest.setVerbosity(1);
 
-const latestBlock = await grpcToPromise(
+const blockResponse = await grpcToPromise(
   blockchainStub,
   "getBlock",
-  getBlockRequest
+  blockRequest
 );
 console.log(
   "✅ Latest Block:",
-  JSON.stringify(latestBlock.toObject(), null, 2)
+  JSON.stringify(blockResponse.toObject(), null, 2)
 );
 console.log("");
 
 console.log("Getting node info...");
 const nodeInfoRequest = new network_pb.GetNodeInfoRequest();
-const nodeInfo = await grpcToPromise(
+const nodeInfoResponse = await grpcToPromise(
   networkStub,
   "getNodeInfo",
   nodeInfoRequest
 );
-console.log("✅ Node Info:", JSON.stringify(nodeInfo.toObject(), null, 2));
+console.log("✅ Node Info:", JSON.stringify(nodeInfoResponse.toObject(), null, 2));
 console.log("");

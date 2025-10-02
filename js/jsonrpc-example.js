@@ -7,7 +7,7 @@
 
 import PactusOpenRPC from "pactus-jsonrpc";
 
-console.log("📡 JSON-RPC Examples");
+console.log("JSON-RPC Examples");
 console.log("===================\n");
 
 // Initialize JSON-RPC client with timeout
