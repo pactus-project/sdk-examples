@@ -1,7 +1,8 @@
 # Pactus SDK Examples in Python
 # Official Pactus Python SDK packages
-pactus-grpc>=1.0.0
-pactus-jsonrpc>=1.0.0
+pactus-grpc
+pactus-jsonrpc
+pactus-sdk
 
 # Additional utilities
 asyncio
