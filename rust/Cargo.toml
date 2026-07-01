@@ -16,7 +16,7 @@ serde_json = { version = "1.0", default-features = false, features = ["std"] }
 derive_builder = { version = "0.20" }
 jsonrpsee = { version = "0.26.0", features = ["http-client"] }
 tokio = { version = "1", features = ["full"] }
-tonic = "0.12"
+tonic = "0.14"
 
 [[bin]]
 name = "grpc_example"
