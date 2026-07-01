@@ -7,7 +7,7 @@ This example demonstrates how to:
 1. Connect to the Pactus testnet via JSON-RPC
 2. Fetch blockchain info and pick a random block height
 3. Retrieve a block and inspect its structure
-4. Decode raw transaction bytes using the pactus-sdk Transaction decoder
+4. Decode each transaction in the block using pactus-sdk Transaction.decode()
 
 Usage:
     python sdk_example.py
@@ -16,12 +16,99 @@ Usage:
 import asyncio
 import random
 
-from pactus.block import Block
 from pactus.transaction import Transaction
 from pactus.transaction.payload import PayloadType
 from pactus_jsonrpc.client import PactusOpenRPCClient
 
 TESTNET_RPC = "https://testnet1.pactus.org/jsonrpc"
+
+
+async def get_raw_transaction(client, tx_data):
+    """Get the raw unsigned transaction hex for a given transaction from the block."""
+    ptype_value = tx_data["payload_type"]
+    try:
+        ptype = PayloadType(ptype_value)
+    except ValueError:
+        # Unsupported payload type (e.g. BatchTransfer = 6)
+        return None
+    payload = tx_data.get("Payload", {})
+    fee = int(tx_data.get("fee", 0) or 0)
+    memo = tx_data.get("memo", "")
+
+    if ptype == PayloadType.TRANSFER:
+        transfer = payload.get("Transfer", payload)
+        resp = await client.pactus.transaction.get_raw_transfer_transaction(
+            lock_time=tx_data["lock_time"],
+            sender=transfer["sender"],
+            receiver=transfer["receiver"],
+            amount=transfer["amount"],
+            fee=fee,
+            memo=memo,
+        )
+        return resp["raw_transaction"]
+
+    elif ptype == PayloadType.BOND:
+        bond = payload.get("Bond", payload)
+        resp = await client.pactus.transaction.get_raw_bond_transaction(
+            lock_time=tx_data["lock_time"],
+            sender=bond["sender"],
+            receiver=bond["receiver"],
+            stake=bond["stake"],
+            public_key=bond.get("public_key", ""),
+            fee=fee,
+            memo=memo,
+        )
+        return resp["raw_transaction"]
+
+    elif ptype == PayloadType.UNBOND:
+        unbond = payload.get("Unbond", payload)
+        resp = await client.pactus.transaction.get_raw_unbond_transaction(
+            lock_time=tx_data["lock_time"],
+            validator_address=unbond["validator"],
+            memo=memo,
+        )
+        return resp["raw_transaction"]
+
+    elif ptype == PayloadType.WITHDRAW:
+        withdraw = payload.get("Withdraw", payload)
+        resp = await client.pactus.transaction.get_raw_withdraw_transaction(
+            lock_time=tx_data["lock_time"],
+            validator_address=withdraw["validator"],
+            account_address=withdraw["account"],
+            amount=withdraw["amount"],
+            fee=fee,
+            memo=memo,
+        )
+        return resp["raw_transaction"]
+
+    return None
+
+
+def decode_and_display(i, tx_data, raw_hex):
+    """Decode raw transaction bytes with the SDK and display the result."""
+    if raw_hex is None:
+        print(f"  [{i}] (no raw data available)")
+        return
+
+    raw = bytes.fromhex(raw_hex)
+    tx, _ = Transaction.decode(raw)
+
+    ptype = tx.payload.get_type().name
+    details = [f"version={tx.version}", f"lock_time={tx.lock_time.value}"]
+    if tx.fee.value > 0:
+        details.append(f"fee={tx.fee.value}")
+    if tx.memo:
+        details.append(f"memo='{tx.memo}'")
+    if hasattr(tx.payload, "sender"):
+        details.append(f"sender={tx.payload.sender.string()[:20]}...")
+    if hasattr(tx.payload, "receiver"):
+        details.append(f"receiver={tx.payload.receiver.string()[:20]}...")
+    if hasattr(tx.payload, "amount"):
+        details.append(f"amount={tx.payload.amount.value}")
+    if hasattr(tx.payload, "stake"):
+        details.append(f"stake={tx.payload.stake.value}")
+
+    print(f"  [{i}] {ptype}: {' | '.join(details)}")
 
 
 async def fetch_and_decode_block():
@@ -35,68 +122,41 @@ async def fetch_and_decode_block():
     print("Connecting to Pactus testnet...")
     info = await client.pactus.blockchain.get_blockchain_info()
     latest_height = info["last_block_height"]
-    print(f"  Network: {info.get('network', 'testnet')}")
     print(f"  Latest height: {latest_height}")
 
-    # 2. Pick a random block height (avoid genesis)
-    height = random.randint(1, latest_height - 1)
+    # 2. Pick a random block height (skip genesis, skip recent to avoid reorgs)
+    height = random.randint(10, latest_height - 50)
     print(f"\nFetching block at height {height}...")
 
     block_data = await client.pactus.blockchain.get_block(height=height, verbosity=2)
-    print(f"  Hash: {block_data['hash']}")
-    print(f"  Time: {block_data['block_time']}")
-    print(f"  Transactions: {len(block_data.get('txs', []))}")
+    print(f"  Hash:      {block_data['hash']}")
+    print(f"  Time:      {block_data['block_time']}")
+    print(f"  # Txs:     {len(block_data.get('txs', []))}")
 
-    # 3. Inspect block header
+    # 3. Display header
     header = block_data["header"]
     print(f"\nHeader:")
-    print(f"  Version: {header['version']}")
-    print(f"  Previous block: {header['prev_block_hash']}")
-    print(f"  State root: {header['state_root']}")
-    print(f"  Proposer: {header['proposer_address']}")
+    print(f"  Version:       {header['version']}")
+    print(f"  Prev block:    {header['prev_block_hash'][:24]}...")
+    print(f"  Proposer:      {header['proposer_address']}")
 
-    # 4. Inspect previous certificate
+    # 4. Display previous certificate
     cert = block_data.get("prev_cert")
     if cert:
-        print(f"\nPrevious Certificate:")
-        print(f"  Hash: {cert['hash']}")
-        print(f"  Committers: {len(cert['committers'])}")
+        committers = len(cert.get("committers", []))
+        absentees = len(cert.get("absentees", []))
+        print(f"\nPrev Certificate: {committers} committers, {absentees} absentees")
 
-    # 5. Show transaction details
-    print(f"\nTransactions ({len(block_data.get('txs', []))}):")
-    for i, tx_data in enumerate(block_data.get("txs", []), 1):
-        ptype = PayloadType(tx_data["payload_type"]).name if "payload_type" in tx_data else "?"
-        print(f"  {i}. {tx_data['id'][:16]}...  lock_time={tx_data.get('lock_time','?')}  type={ptype}")
-        if "value" in tx_data:
-            print(f"     value={tx_data['value']} nanoPAC")
-
-    # 6. Demonstrate SDK Transaction.decode() with a known raw transaction
-    #    (Transfer tx from Pactus testnet, verified on-chain)
-    raw_tx_hex = (
-        "000124a3230080ade2040b77616c6c65742d636f726501"
-        "037098338e0b6808119dfd4457ab806b9c2059b89b"
-        "037a14ae24533816e7faaa6ed28fcdde8e55a7df21"
-        "8084af5f"
-        "4ed8fee3d8992e82660dd05bbe8608fc56ceabffdeeee61e3213b9b49d33a0fc"
-        "8dea6d79ee7ec60f66433f189ed9b3c50b2ad6fa004e26790ee736693eda8506"
-        "95794161374b22c696dabb98e93f6ca9300b22f3b904921fbf560bb72145f4fa"
-    )
-    raw = bytes.fromhex(raw_tx_hex)
-    tx, _ = Transaction.decode(raw)
-
-    print(f"\n--- SDK Decode Demo ---")
-    print(f"Decoded transaction from raw hex:")
-    print(f"  Version:     {tx.version}")
-    print(f"  Lock time:   {tx.lock_time.value}")
-    print(f"  Fee:         {tx.fee.value} nanoPAC")
-    print(f"  Memo:        {tx.memo}")
-    print(f"  Payload:     {tx.payload.get_type().name}")
-    print(f"  Sender:      {tx.payload.sender.string()}")
-    print(f"  Receiver:    {tx.payload.receiver.string()}")
-    print(f"  Amount:      {tx.payload.amount.value} nanoPAC")
-    print(f"  TxID:        {str(tx.id())}")
-    print(f"  Signature:   {'present' if tx.signature else 'missing'}")
-    print(f"  Public key:  {'present' if tx.public_key else 'missing'}")
+    # 5. Decode each transaction using pactus-sdk
+    txs = block_data.get("txs", [])
+    print(f"\nTransactions decoded with pactus-sdk ({len(txs)}):")
+    for i, tx_data in enumerate(txs, 1):
+        tx_id = tx_data["id"][:16]
+        raw_hex = await get_raw_transaction(client, tx_data)
+        if raw_hex is None:
+            print(f"  [{i}] {tx_id}... (unsupported payload type)")
+        else:
+            decode_and_display(i, tx_data, raw_hex)
 
     print("\nDone.")
 
